@@ -1,0 +1,30 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w" -o downonly-linux-${{ matrix.arch }}-${TAG} main.go
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: downonly-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
